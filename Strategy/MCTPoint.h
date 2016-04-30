@@ -13,6 +13,8 @@ public:
 	MCTNode(){
 		interest = 0;
 		totalRound = 0;
+		x = y = -1;
+		//father = NULL;
 	}
 };
 
