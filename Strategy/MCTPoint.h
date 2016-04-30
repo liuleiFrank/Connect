@@ -1,0 +1,19 @@
+#ifndef MCTNODE_H_
+#define MCTNODE_H_
+
+
+class MCTNode{
+public:
+	int left,right,father;
+	int x,y;
+	bool isLeaf,isUser;
+	double interest;//收益，暂定为赢的次数
+	int totalRound;
+
+	MCTNode(){
+		interest = 0;
+		totalRound = 0;
+	}
+};
+
+#endif
