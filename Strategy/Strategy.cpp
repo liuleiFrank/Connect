@@ -7,7 +7,7 @@
 #include <cmath>
 #include <conio.h>
 #include <atlstr.h>
-const int MAXTREE = 8500;
+const int MAXTREE = 85000;
 MCTNode nodes[MAXTREE];
 int m,n;//将长度和宽度设置为全局变量便于调用
 int nox,noy;
@@ -64,7 +64,7 @@ extern "C" __declspec(dllexport) Point* getPoint(const int M, const int N, const
 	int index = 0;
 	//_cprintf("lastX= %d\n", lastX);
 	//_cprintf("lastY= %d\n", lastY);
-	//for(int i=0;i<N;++i)_cprintf("%d ", top[i]);
+	for(int i=0;i<N;++i)_cprintf("%d ", top[i]);
 	//_cprintf("\n");
 	nodes[0].x = lastX;
 	nodes[0].y = lastY;
@@ -99,10 +99,12 @@ extern "C" __declspec(dllexport) Point* getPoint(const int M, const int N, const
 		Top[i] = top[i];
 		const_TOP[i] = top[i];
 	}
+	srand((int)time(0));
 	int start = clock();
 	int end = clock();
 	//_cprintf("nox = %d\n", nox);
 	//_cprintf("noy = %d\n", noy);
+	int count = 0;
 	while((end - start)<4500){
 		int chosen_index = TreePolicy(0);
 		//_cprintf("chosen_index  = %d\n", chosen_index);
@@ -117,6 +119,7 @@ extern "C" __declspec(dllexport) Point* getPoint(const int M, const int N, const
 				Top[j] = TOP[j];
 			}
 		end = clock();
+		++count;
 		//_cprintf("end = %d \n",end);
 		/*_cprintf("after chose one \n");
 		for(int i=0;i<m ;++i){
@@ -126,14 +129,16 @@ extern "C" __declspec(dllexport) Point* getPoint(const int M, const int N, const
 			_cprintf(" \n");
 		}*/
 	}
+	_cprintf("%d \n",count);
 	int best_choice = BestChild(0,0);
 	x = nodes[best_choice].x;
 	y = nodes[best_choice].y;
-	//_cprintf("best_x=%d best_y=%d \n",x,y);
+	_cprintf("best_x=%d best_y=%d \n",x,y);
 	/*
 		不要更改这段代码
 	*/
 	clearArray(M, N, board);
+	clear();
 	return new Point(x, y);
 }
 
@@ -223,7 +228,7 @@ int TreePolicy(int v){
 		if((nodes[v].right - nodes[v].left) < n){			
 			return Expand(v);
 		}
-		else return  BestChild(v,1);
+		else return  BestChild(v,0);
 	}
 	//_cprintf("v = %d\n", v);
 }
@@ -268,7 +273,7 @@ double DefaultPolicy(int v){
 		//_cprintf("Tie \n");
 		return 0;
 	}
-	else return 0;
+	//else return 0;
 }
 
 
@@ -284,4 +289,17 @@ void BackUp(int v, double value){
 	}
 	//_cprintf(" \n");
 	++nodes[0].totalRound;
+}
+
+
+void clear(){
+	for(int i=0;i<m;++i){
+		delete TEMP[i];
+		delete temp[i];
+	}
+	delete TEMP;
+	delete temp;
+	delete TOP;
+	delete Top;
+	delete const_TOP;
 }

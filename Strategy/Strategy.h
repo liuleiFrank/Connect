@@ -29,4 +29,6 @@ int BestChild(int v, int c);
 double DefaultPolicy(int v);
 
 void BackUp(int v,double value);
+
+void clear();
 #endif
