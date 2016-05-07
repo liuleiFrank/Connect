@@ -24,7 +24,7 @@ int TreePolicy(int i);
 
 int Expand(int i);
 
-int BestChild(int v, double c);
+int BestChild(int v, int c);
 
 double DefaultPolicy(int v);
 
