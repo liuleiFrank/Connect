@@ -26,7 +26,7 @@ int Expand(int i);
 
 int BestChild(int v, double c);
 
-double DefaultPolicy(int v);
+void DefaultPolicy(int v);
 
 void BackUp(int v,double value);
 

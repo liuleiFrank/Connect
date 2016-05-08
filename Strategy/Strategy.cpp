@@ -7,7 +7,7 @@
 #include <cmath>
 #include <conio.h>
 #include <atlstr.h>
-const int MAXTREE = 8500000;
+const int MAXTREE = 25000000;
 MCTNode nodes[MAXTREE];
 int m,n;//将长度和宽度设置为全局变量便于调用
 int nox,noy;
@@ -15,6 +15,7 @@ int **temp;//TreePolicy 和default中调用模拟使用
 int **Temp;
 int *TOP;
 int* Top;
+int index;
 using namespace std;
 
 /*
@@ -57,7 +58,7 @@ extern "C" __declspec(dllexport) Point* getPoint(const int M, const int N, const
 		该部分对参数使用没有限制，为了方便实现，你可以定义自己新的类、.h文件、.cpp文件
 	*/
 	//Add your own code below
-	AllocConsole();
+	//AllocConsole();
 	nox = noX;
 	noy = noY;
 	m = M;
@@ -76,19 +77,12 @@ extern "C" __declspec(dllexport) Point* getPoint(const int M, const int N, const
 			Temp[i][j] = board[i][j];
 		}
 	}
-
-	//初始化根节点
-	/*for(int i=0;i<m;++i){
-		for(int j=0;j<n;++j)
-			_cprintf("%d ",board[i][j]);
-		_cprintf("\n");
-	}*/
 	nodes[0].left = nodes[0].right = 1;
 	nodes[0].isUser = true;//对方为user
 	nodes[0].father = NULL;
 	nodes[0].x = lastX;
 	nodes[0].y = lastY;
-	
+	index = 1;
 	int start = clock();
 	int end = clock();
 	int count = 0;
@@ -103,30 +97,16 @@ extern "C" __declspec(dllexport) Point* getPoint(const int M, const int N, const
 			}
 		}
 		int chosen_index = TreePolicy(0);
-		/*_cprintf("chosen_index  = %d\n", chosen_index);
-		for(int i=0;i<m;++i){
-			for(int j=0;j<n;++j)
-				_cprintf("%d ",Temp[i][j]);
-			_cprintf("\n");
-		}*/
-		/*if(chosen_index > index) index = chosen_index;*/
-		//_cprintf("index  = %d\n", index);
-		double value = DefaultPolicy(chosen_index);
-		// _cprintf("value  = %f\n", value);
-		BackUp(chosen_index , value);
+		//_cprintf("chosen_index  = %d\n", chosen_index);
+		DefaultPolicy(chosen_index);
 		end = clock();
 		++count;
 	}
 	//_cprintf("%d \n",count);
+	//_cprintf("index = %d\n", index);
 	int best_choice = BestChild(0,0);
 	x = nodes[best_choice].x;
 	y = nodes[best_choice].y;
-	/*for(int i=1;i<=n;++i)
-		_cprintf("%d  interest=%f  round=%d \n",i,nodes[i].interest,nodes[i].totalRound);
-	_cprintf("bestchoice=%d best_x=%d best_y=%d \n",best_choice,x,y);*/
-	/*
-		不要更改这段代码
-	*/
 	clearArray(M, N, board);
 	clear();
 	return new Point(x, y);
@@ -168,7 +148,7 @@ bool notEnd(int v){
 
 //扩展该节点
 int Expand(int v){
-	//_cprintf("1.interest=%f \n",nodes[1].interest);
+	//_cprintf("Expand v=%d\n",v);
 	int i= nodes[v].right - nodes[v].left;	//列数
 	int index_ = nodes[v].right; //当前扩展节点的下标
 	while(TOP[i]==0)++i;  //排除无法落子的列
@@ -179,7 +159,8 @@ int Expand(int v){
 	else --TOP[i];
 	nodes[index_].interest = nodes[index_].totalRound = 0;
 	nodes[index_].father = v;
-	nodes[index_].left = nodes[index_].right = n * index_ + 1;
+	index += n;//控制子节点的下标
+	nodes[index_].left = nodes[index_].right =index;
 	nodes[index_].isUser = !nodes[v].isUser;
 	Temp[nodes[index_].x][i] = (nodes[index_].isUser)?1:2;
 	++nodes[v].right;
@@ -189,13 +170,12 @@ int Expand(int v){
 
 //选择出最好的子节点
 int BestChild(int v , double c){
-	 // _cprintf("BestChild \n");
-	int best = 0;
-	double Q = -10000000;
-	for(int i= nodes[v].left;i<nodes[v].right;++i){
-		double temp_Q =0;
-		if(nodes[i].isUser)temp_Q = 100-nodes[i].interest/nodes[i].totalRound + c * sqrt(2 * log((long double)nodes[v].totalRound)/(double)nodes[i].totalRound);
-		else temp_Q = nodes[i].interest/nodes[i].totalRound + c * sqrt(2 * log((long double)nodes[v].totalRound)/(double)nodes[i].totalRound);
+	 //_cprintf("BestChild \n");
+	int i= nodes[v].left;
+	int best = i;
+	double Q = nodes[i].interest/(double)nodes[i].totalRound + c * sqrt(2 * log((long double)nodes[v].totalRound)/(double)nodes[i].totalRound);
+	for(++i;i<nodes[v].right;++i){
+		double temp_Q = nodes[i].interest/(double)nodes[i].totalRound + c * sqrt(2 * log((long double)nodes[v].totalRound)/(double)nodes[i].totalRound);
 		if(temp_Q > Q){
 			Q = temp_Q;
 			best = i;
@@ -208,7 +188,7 @@ int BestChild(int v , double c){
 
 //搜索树策略
 int TreePolicy(int v){
-	  //_cprintf("Tree Policy!\n");
+	//_cprintf("Tree Policy!\n");
 	int index = v;
 	while(true){		
 		if(index != v){
@@ -221,10 +201,14 @@ int TreePolicy(int v){
 			for(int i=0;i<n;++i)
 				if(TOP[i]>0)
 					++choice;
-			if((nodes[v].right - nodes[v].left) < choice){			
+			//_cprintf("choice=%d\n",choice);
+			if((nodes[v].right - nodes[v].left) < choice){	
 				return Expand(v);
 			}
-			else v = BestChild(v,0.7);
+			else {
+				v = BestChild(v,0.7);
+				//_cprintf("%d\n",v);
+			}
 		}
 		else break;		
 	}
@@ -233,8 +217,8 @@ int TreePolicy(int v){
 }
 //默认策略
 //其中v为待模拟的状态节点
-double DefaultPolicy(int v){
-	  //_cprintf("Default Ploicy \n");
+void DefaultPolicy(int v){
+	//_cprintf("Default Ploicy \n");
 	double value = 0;
 	int user = (nodes[v].isUser)?1:2;
 	for(int i=0;i<n;++i)Top[i] = TOP[i];
@@ -243,19 +227,22 @@ double DefaultPolicy(int v){
 			temp[i][j] = Temp[i][j];
 	bool isWin = (user == 1)? userWin(nodes[v].x, nodes[v].y, m, n, temp): machineWin(nodes[v].x, nodes[v].y, m,n, temp);
 	int rand_x = nodes[v].x,rand_y = nodes[v].y;
-	// _cprintf("1 \n");
-	if(isWin && user == 1) return -1;
-	else if(isWin &&user == 2) return 1;
-	else if(isTie(n,Top)) return 0;
+	
+	if(isWin && user == 1) BackUp(v,-1);
+	else if(isWin &&user == 2) BackUp(v,1);
+	else if(isTie(n,Top)) BackUp(v,0);
 	else {
+		 //_cprintf("1 \n");
 		for(int i=0;i<2*n;++i){
 			for(int k=0;k<m;++k)
 				for(int j=0;j<n;++j){
 					Top[j] = TOP[j];
 					temp[k][j] = Temp[k][j];
 				}
-			rand_y = i%n;
-			while(!isWin && !isTie(n,Top)){				
+			bool isWin = (user == 1)? userWin(nodes[v].x, nodes[v].y, m, n, temp): machineWin(nodes[v].x, nodes[v].y, m,n, temp);
+			int rand_x = nodes[v].x,rand_y = nodes[v].y;
+			while(!isWin && !isTie(n,Top)){	
+				rand_y = rand()%n;
 				while(Top[rand_y]== 0)
 					rand_y = rand()%n;
 				rand_x = Top[rand_y]-1;
@@ -265,30 +252,58 @@ double DefaultPolicy(int v){
 				temp[rand_x][rand_y] = user;
 				if(user == 2)isWin = machineWin(rand_x, rand_y, m, n, temp);
 				else isWin =  userWin(rand_x, rand_y, m, n, temp);
-				rand_y = rand()%n;
+				
 			}
-			if( user == 2 && userWin(rand_x,rand_y,m,n,temp))--value;
-			else if(user == 1 && machineWin(rand_x,rand_y,m,n,temp))++value;
+			/*_cprintf("user=%d\n",user);
+			for(int i=0;i<m;++i){
+				for(int j=0;j<n;++j){
+					_cprintf("%d ",temp[i][j]);
+				}
+				_cprintf("\n");
+			}*/
+			/*for(int i=0;i<n;++i)_cprintf("%d ",Top[i]);
+			_cprintf("\n");*/
+			if( user == 1 && userWin(rand_x,rand_y,m,n,temp)){value = -1;/* _cprintf("userwin\n");*/BackUp(v,value);}
+			else if(user == 2 && machineWin(rand_x,rand_y,m,n,temp)){value = 1; /*_cprintf("machineWin\n");*/BackUp(v,value);}
+			else {value = 0;/*_cprintf("Tie\n");*/BackUp(v, value);}
 		}
-		return value;
 	}	
-	
+	return ;	
 }
 
 
 //回溯修改父辈的估计值和访问次数
 void BackUp(int v, double value){
-	 //_cprintf("BckpUp \n");
-	while(v != 0){
-		++nodes[v].totalRound;
-		nodes[v].interest += value;
-		value = -value;
-		//_cprintf("%d %d %f %d\n",v,nodes[v].father,nodes[v].interest,nodes[v].totalRound);
-		v = nodes[v].father;
+	
+	if( value > 0){
+		while(v != 0){
+			++nodes[v].totalRound;
+			if(!nodes[v].isUser)++nodes[v].interest;
+			//_cprintf("%d %d %f %d\n",v,nodes[v].father,nodes[v].interest,nodes[v].totalRound);
+			v = nodes[v].father;
+		}
+		//_cprintf(" \n");
+		++nodes[0].totalRound;
 	}
-	//_cprintf(" \n");
-	++nodes[0].totalRound;
-	nodes[0].interest+=value;
+	else if(value<0){
+		while(v != 0){
+			++nodes[v].totalRound;
+			if(nodes[v].isUser)++nodes[v].interest;
+			//_cprintf("%d %d %f %d\n",v,nodes[v].father,nodes[v].interest,nodes[v].totalRound);
+			v = nodes[v].father;
+		}
+		++nodes[0].totalRound;
+		++nodes[0].interest;
+	}
+	else {
+		while(v != 0){
+			++nodes[v].totalRound;
+			++nodes[v].interest;
+			v = nodes[v].father;
+		}
+		++nodes[0].totalRound;
+		++nodes[0].interest;
+	}
 }
 
 
