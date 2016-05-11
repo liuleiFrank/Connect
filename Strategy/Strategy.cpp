@@ -1,22 +1,21 @@
+#include <iostream>
 #include "Point.h"
 #include "Strategy.h"
 #include "Judge.h"
 #include "MCTPoint.h"
 #include <ctime>
 #include <cmath>
-#include <iostream>
-//#include <conio.h>
-//#include <atlstr.h>
-#include <thread>
-const int MAXTREE = 9000000;
+#include <conio.h>
+#include <atlstr.h>
+const int MAXTREE = 25000000;
 const double epsilon = 1e-6;
 MCTNode nodes[MAXTREE];
 int m,n;//将长度和宽度设置为全局变量便于调用
 int nox,noy;
-//int **temp;//TreePolicy 和default中调用模拟使用
+int **temp;//TreePolicy 和default中调用模拟使用
 int **Temp;
 int *TOP;
-//int* Top;
+int* Top;
 int index;
 using namespace std;
 
@@ -64,13 +63,18 @@ extern "C" __declspec(dllexport) Point* getPoint(const int M, const int N, const
 	noy = noY;
 	m = M;
 	n = N;
-	//Top = new int[n];
+	Top = new int[n];
 	TOP = new int[n];
-	//temp = new int*[m];
+	temp = new int*[m];
 	Temp = new int*[m];
 	for(int i=0;i<m;++i){
-		//temp[i] = new int[n];
+		temp[i] = new int[n];
 		Temp[i] = new int[n];
+		for(int j=0;j<n;++j){
+			Top[j] = top[j];
+			temp[i][j] = board[i][j];
+			Temp[i][j] = board[i][j];
+		}
 	}
 	nodes[0].left = nodes[0].right = 1;
 	nodes[0].isUser = true;//对方为user
@@ -84,11 +88,11 @@ extern "C" __declspec(dllexport) Point* getPoint(const int M, const int N, const
 	srand((int)time(0));
 	while((end - start)<4500){
 		for(int i = 0; i < n; ++i){
-			//Top[i] = top[i];
+			Top[i] = top[i];
 			TOP[i] = top[i];
 			for(int j=0;j<m;++j){
 				Temp[j][i] = board[j][i];
-				//temp[j][i] = board[j][i];
+				temp[j][i] = board[j][i];
 			}
 		}
 		int chosen_index = TreePolicy(0);
@@ -148,15 +152,15 @@ int Expand(int v){
 	if(i>n||index_>MAXTREE)return v;
 	nodes[index_].y = i;
 	nodes[index_].x = TOP[i]-1;
-	if((TOP[i]-2) == nox && i == noy){TOP[i] -= 2;/*Top[i] -= 2;*/}
-	else {--TOP[i];/*--Top[i];*/}
+	if((TOP[i]-2) == nox && i == noy){TOP[i] -= 2;Top[i] -= 2;}
+	else {--TOP[i];--Top[i];}
 	nodes[index_].interest = nodes[index_].totalRound = 0;
 	nodes[index_].father = v;
 	index += n;//控制子节点的下标
 	nodes[index_].left = nodes[index_].right =index;
 	nodes[index_].isUser = !nodes[v].isUser;
 	Temp[nodes[index_].x][i] = (nodes[index_].isUser)?1:2;
-	//temp[nodes[index_].x][i] = Temp[nodes[index_].x][i];
+	temp[nodes[index_].x][i] = Temp[nodes[index_].x][i];
 	++nodes[v].right;
 	return index_;
 }
@@ -193,10 +197,10 @@ int TreePolicy(int v){
 		else {
 			v = BestChild(v,0.7);
 			--TOP[nodes[v].y];
-			//--Top[nodes[v].y];
-			if((nodes[v].x-1)==nox && nodes[v].y==noy){--TOP[nodes[v].y];/*--Top[nodes[v].y];*/}
+			--Top[nodes[v].y];
+			if((nodes[v].x-1)==nox && nodes[v].y==noy){--TOP[nodes[v].y];--Top[nodes[v].y];}
 			Temp[nodes[v].x][nodes[v].y] = (nodes[v].isUser)?1:2;
-			//temp[nodes[v].x][nodes[v].y] = Temp[nodes[v].x][nodes[v].y];
+			temp[nodes[v].x][nodes[v].y] = Temp[nodes[v].x][nodes[v].y];
 		}
 	}
 	return v;
@@ -207,59 +211,40 @@ void DefaultPolicy(int v){
 	//_cprintf("Default Ploicy \n");
 	double value = 0;
 	int user = (nodes[v].isUser)?1:2;
-	bool isWin = (user == 1)? userWin(nodes[v].x, nodes[v].y, m, n, Temp): machineWin(nodes[v].x, nodes[v].y, m,n, Temp);
+	bool isWin = (user == 1)? userWin(nodes[v].x, nodes[v].y, m, n, temp): machineWin(nodes[v].x, nodes[v].y, m,n, temp);
+	int rand_x = nodes[v].x,rand_y = nodes[v].y;
+	
 	if(isWin && user == 1) BackUp(v,-1);
 	else if(isWin &&user == 2) BackUp(v,1);
-	else if(isTie(n,TOP)) BackUp(v,0);
+	else if(isTie(n,Top)) BackUp(v,0);
 	else {
-		for(int i=0;i<3;++i){
-			/*for(int k=0;k<m;++k)
+		for(int i=0;i<2*n;++i){
+			for(int k=0;k<m;++k)
 				for(int j=0;j<n;++j){
 					Top[j] = TOP[j];
 					temp[k][j] = Temp[k][j];
-				}*/
-			thread t1(simulate,user,v);
-			t1.join();
-			thread t2(simulate,user,v);
-			t2.join();
-			thread t3(simulate,user,v);
-			t3.join();
-			thread t4(simulate,user,v);
-			t4.join();
+				}
+			bool isWin = (user == 1)? userWin(nodes[v].x, nodes[v].y, m, n, temp): machineWin(nodes[v].x, nodes[v].y, m,n, temp);
+			int rand_x = nodes[v].x,rand_y = nodes[v].y;
+			while(!isWin && !isTie(n,Top)){	
+				rand_y = rand()%n;
+				while(Top[rand_y]== 0)
+					rand_y = rand()%n;
+				rand_x = Top[rand_y]-1;
+				if(rand_x ==nox && rand_y==noy)Top[rand_y]-=2;
+				else --Top[rand_y];			
+				user = 3 - user;
+				temp[rand_x][rand_y] = user;
+				if(user == 2)isWin = machineWin(rand_x, rand_y, m, n, temp);
+				else isWin =  userWin(rand_x, rand_y, m, n, temp);
+				
+			}
+			if(isTie(n,Top)) {value = 0;/*_cprintf("Tie\n");*/BackUp(v, value);}
+			else if( user == 1 ){value = -1;/* _cprintf("userwin\n");*/BackUp(v,value);}
+			else if(user == 2){value = 1; /*_cprintf("machineWin\n");*/BackUp(v,value);}
 		}
 	}	
 	return ;	
-}
-
-//模拟
-void simulate(int user,int v){
-	int ** temp = new int*[m];
-	int *Top = new int[n];
-	for(int k=0;k<m;++k){
-		temp[k] = new int[n];
-		for(int j=0;j<n;++j){
-			Top[j] = TOP[j];
-			temp[k][j] = Temp[k][j];
-		}
-	}
-	int rand_x = nodes[v].x,rand_y = nodes[v].y;
-	bool isWin = (user == 1)? userWin(nodes[v].x, nodes[v].y, m, n, temp): machineWin(nodes[v].x, nodes[v].y, m,n, temp);
-	while(!isWin && !isTie(n,Top)){	
-		rand_y = rand()%n;
-		while(Top[rand_y]== 0)
-			rand_y = rand()%n;
-			rand_x = Top[rand_y]-1;
-			if(rand_x ==nox && rand_y==noy)Top[rand_y]-=2;
-			else --Top[rand_y];			
-			user = 3 - user;
-			temp[rand_x][rand_y] = user;
-			if(user == 2)isWin = machineWin(rand_x, rand_y, m, n, temp);
-			else isWin =  userWin(rand_x, rand_y, m, n, temp);
-		
-	}
-	if(isTie(n,Top)) {/*_cprintf("Tie\n");*/BackUp(v, 0);}
-	else if( user == 1 ){/* _cprintf("userwin\n");*/BackUp(v,-1);}
-	else if(user == 2){ /*_cprintf("machineWin\n");*/BackUp(v,1);}
 }
 
 
@@ -296,11 +281,11 @@ void BackUp(int v, double value){
 
 void clear(){
 	for(int i=0;i<m;++i){
-		//delete temp[i];
+		delete temp[i];
 		delete Temp[i];
 	}
-	//delete temp;
+	delete temp;
 	delete Temp;
-	//delete Top;
+	delete Top;
 	delete TOP;
 }

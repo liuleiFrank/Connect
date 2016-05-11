@@ -28,7 +28,6 @@ int BestChild(int v, double c);
 
 void DefaultPolicy(int v);
 
-void simulate(int user,int v);
 void BackUp(int v,double value);
 
 void clear();
